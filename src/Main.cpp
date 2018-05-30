@@ -1,10 +1,10 @@
 #include <iostream>
-#include <traversability/Dummy.hpp>
+#include <traversability/traversability.hpp>
 
 int main(int argc, char** argv)
 {
-    traversability::DummyClass dummyClass;
-    dummyClass.welcome();
+    traversability::Traversability t;
+    t.welcome();
 
     return 0;
 }
