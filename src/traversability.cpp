@@ -323,8 +323,31 @@ cv::Mat Traversability::computeTraversability()
     return traversability_map;
 }
 
+cv::Mat Traversability::local2globalOrientation(cv::Mat relative_map, float yaw)
+{
+    // create enlarged map with double the size of the input map
+    insert_rows = relative_map.rows*2;
+    insert_cols = relative_map.cols*2;
 
-void Traversability::local2globalOrientation(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw)
+    rotated_map.create(insert_rows, insert_cols, CV_8UC1);
+    rotated_map.setTo(0);
+
+    // copy relative map in the middle of enlarged map todo create a  roi with rect to ease readability
+    relative_map.copyTo(rotated_map(cv::Rect(relative_map.cols/2,relative_map.rows,relative_map.cols, relative_map.rows)));
+
+    // rotation center
+    cv::Point2f rot_center((float)insert_rows/2.0,(float)insert_cols/2.0);
+
+    // yaw rotation matrix
+    cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw/3.14159*180.0),1.0);
+
+    // apply yaw rotation
+    cv::warpAffine(rotated_map,rotated_map,transform,rotated_map.size(),CV_INTER_LINEAR);
+
+    return rotated_map;
+}
+
+void Traversability::local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw)
 {
     // create enlarged map with double the size of the input map
     insert_rows = relative_map.rows*2;
