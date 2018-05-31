@@ -28,11 +28,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 // PCL  -> Delete all probably
-#include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/crop_box.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/common/transforms.h>
+//#include <pcl/filters/statistical_outlier_removal.h>
+//#include <pcl/filters/voxel_grid.h>
+//#include <pcl/filters/crop_box.h>
+//#include <pcl/features/normal_3d.h>
+//#include <pcl/common/transforms.h>
 
 // Sys -> Delete probably
 #include <sys/time.h>
@@ -59,7 +59,7 @@ namespace traversability
             void detectObstacles(float elevation_threshold);
             void thresholdSlopeMap(float slope_threshold);
 	    void dilateObstacles(float robot_size, int iterations);
-            void computeTraversability();
+            cv::Mat computeTraversability();
 
 	    // local to global rotation
             void local2globalOrientation(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
@@ -73,8 +73,8 @@ namespace traversability
             float map_size_width;  // in meters
             float map_size_height; // in meters
             float map_resolution;  // in meters
-            float map_cells_width; // # of cells
-            float map_cells_height;// # of cells
+            float map_cells_width; // # of cells in width
+            float map_cells_height;// # of cells in height
             int slope_map_scale;
 
             // Obstacle laplacian parameters

@@ -311,7 +311,7 @@ void Traversability::dilateObstacles(float robot_size, int iterations)
             dilation_iterations);
 }
 
-void Traversability::computeTraversability()
+cv::Mat Traversability::computeTraversability()
 {
     // combine two traversability if feasible
     cv::Mat t1, t2;
@@ -320,6 +320,7 @@ void Traversability::computeTraversability()
     cv::multiply(t2, 255, t2); // multiplication because of previous comment
     cv::bitwise_or(t1, t2, traversability_map);
     traversability_map.convertTo(traversability_map, CV_32FC1);
+    return traversability_map;
 }
 
 
