@@ -96,7 +96,8 @@ void Traversability::elevationMapInterpolate()
     int16_t column, row, p, start_index, end_index;
     float value, value_previous, fraction, start_value, end_value;
 
-    elevation_map.copyTo(elevation_map_interpolated); // TODO unsure this is good idea..
+    // TODO unsure this is good idea..
+    elevation_map.copyTo(elevation_map_interpolated);
 
     for(column = 0; column < elevation_map.cols; column++)
     {
@@ -239,7 +240,8 @@ void Traversability::detectObstacles(float elevation_threshold)
     interpLaplacian.copyTo(elevation_map_laplacian, elevation_map_mask);
 
     // The obstacle map is based on the laplacien image and a threshold defines probably obstacles
-    cv::threshold(-elevation_map_laplacian, elevation_map_laplacian_thresholded, laplacian_threshold, 1.0f, cv::THRESH_BINARY);   // TODO sure it is so? -laplacian or abs(laplacian)[
+    // TODO sure it is so? -laplacian or abs(laplacian)[
+    cv::threshold(-elevation_map_laplacian, elevation_map_laplacian_thresholded, laplacian_threshold, 1.0f, cv::THRESH_BINARY);   
 
     // find contours, dilate obstacles a bit first so that all or
     // slightly more of it is included in the contour
@@ -288,7 +290,8 @@ void Traversability::detectObstacles(float elevation_threshold)
         cv::bitwise_and(elevation_map_mask,single_surround_mask, single_surround_mask);
         inside_mean[iContour] = cv::mean(elevation_map,single_contour_mask)[0];
         outside_mean[iContour] = cv::mean(elevation_map,single_surround_mask)[0];
-        cv::minMaxLoc(elevation_map, &minVal[iContour], &maxVal[iContour], NULL, NULL, single_contour_mask); // TODO check again because now peak relies on only one point (should be like top 3 or 5 points)
+        // TODO check again because now peak relies on only one point (should be like top 3 or 5 points)
+        cv::minMaxLoc(elevation_map, &minVal[iContour], &maxVal[iContour], NULL, NULL, single_contour_mask);
         if((maxVal[iContour] - outside_mean[iContour]) > elevation_threshold) // this is indeed an obstacle
         {
             obstacle_check[iContour] = 1;
@@ -340,12 +343,14 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
             cv::Size(kernel_size,kernel_size)); // round kernel;
 
     // Check here dilation computation
-    cv::dilate(local_map, local_map, dilation_kernel, cv::Point( -1, -1 ),
-            dilation_iterations);
+    cv::dilate(local_map, local_map, dilation_kernel, cv::Point( -1, -1 ), dilation_iterations);
 
     // After dilation, create enlarged map with the size that fits the rotated map in any posible rotation;
-    insert_rows = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
-    insert_cols = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
+    // Round up to next odd number 
+    insert_rows = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols));
+    insert_rows += 1-(insert_rows%2);
+    insert_cols = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols));
+    insert_cols += 1-(insert_cols%2);
 
     rotated_map.create(insert_rows, insert_cols, CV_8UC1);
     rotated_map.setTo(0);
@@ -358,6 +363,7 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
 
     // Rotate yaw additional -90 degress for path planner global map convention
     yaw -= M_PI/2.0;
+
     // yaw rotation matrix
     cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw*(180/M_PI)),1.0);
 
@@ -378,9 +384,9 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map, cv::Ma
     rotated_map.setTo(0.0);
     rotated_mask_map.setTo(0);
 
-    // copy relative map in the middle of enlarged map todo create a  roi with rect to ease readability
+    // copy relative map in the middle of enlarged map todo create a roi with rect to ease readability
     cv::Mat tmp;
-    relative_map.convertTo(tmp,CV_32FC1); //force trav maps to be 32F so they can have Nan. TODO Find better way (or kill RAM)
+    relative_map.convertTo(tmp,CV_32FC1); //force trav maps to be 32F so they can have NaN. TODO Find better way (or kill RAM)
     tmp.copyTo(rotated_map(cv::Rect(relative_map.cols/2,relative_map.rows,relative_map.cols, relative_map.rows)));
     relative_mask_map.copyTo(rotated_mask_map(cv::Rect(relative_mask_map.cols/2,relative_mask_map.rows,relative_mask_map.cols, relative_mask_map.rows)));
 
@@ -390,7 +396,7 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map, cv::Ma
     cv::Point2f rot_center((float)insert_rows/2.0,(float)insert_cols/2.0);
 
     // yaw rotation matrix
-    cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw/3.14159*180.0),1.0);
+    cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw/M_PI*180.0),1.0);
 
     // apply yaw rotation
     cv::warpAffine(rotated_map,rotated_map,transform,rotated_map.size(),CV_INTER_LINEAR);
