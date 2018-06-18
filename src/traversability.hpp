@@ -62,7 +62,7 @@ namespace traversability
             cv::Mat computeTraversability();
 
 	    // local to global rotation
-            cv::Mat local2globalOrientation(cv::Mat relative_map, float yaw);
+            cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
             void local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
 
 	    // images/pcl/data getters

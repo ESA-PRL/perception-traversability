@@ -325,28 +325,41 @@ cv::Mat Traversability::computeTraversability()
 
 cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
 {
-    // create enlarged map with the size that fits the rotated map in any posible rotation;
-    insert_rows = (int)(2*sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
-    insert_cols = (int)(2*sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
+    // First of all dilate the obstacles in local map
+    
+    // kernel size is dependant on map resolution and robot width
+    //int kernel_size = (int)(robot_size/(map_resolution)) + 1;
+    //dilation_iterations = iterations;
+    
+    int kernel_size = 71;
+    dilation_iterations = 2;
+    dilation_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+            cv::Size(kernel_size,kernel_size)); // round kernel;
+
+    // Check here dilation computation
+    cv::dilate(local_map, local_map, dilation_kernel, cv::Point( -1, -1 ),
+            dilation_iterations);
+
+    // After dilation, create enlarged map with the size that fits the rotated map in any posible rotation;
+    insert_rows = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
+    insert_cols = ceil(sqrt(local_map.rows*local_map.rows+local_map.cols*local_map.cols)); // use ceil() function and make sure it is odd number
 
     rotated_map.create(insert_rows, insert_cols, CV_8UC1);
     rotated_map.setTo(0);
-    
-    local_map.setTo(255); // for debugging/testing purposes, remove once validated.
-    yaw = 0.0; 		  // for debugging/testing purposes, remove once validated.
 
-    // copy relative map in the middle of enlarged map todo create a  roi with rect to ease readability
-    //relative_map.copyTo(rotated_map(cv::Rect(relative_map.cols/2,relative_map.rows,relative_map.cols, relative_map.rows)));
+    // copy local map in the middle of enlarged map todo create roi with rect to ease readability
+    local_map.copyTo(rotated_map(cv::Rect((insert_cols-local_map.cols)/2,(insert_rows-local_map.rows)/2,local_map.cols, local_map.rows)));
 
     // rotation center
-    //cv::Point2f rot_center((float)insert_rows/2.0,(float)insert_cols/2.0);
-    cv::Point2f rot_center((float)local_map.rows/2.0,(float)local_map.cols/2.0);
+    cv::Point2f rot_center((float)insert_rows/2.0,(float)insert_cols/2.0);
 
+    // Rotate yaw additional -90 degress for path planner global map convention
+    yaw -= M_PI/2.0;
     // yaw rotation matrix
-    cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw/3.14159*180.0),1.0);
+    cv::Mat transform = cv::getRotationMatrix2D(rot_center,(yaw*(180/M_PI)),1.0);
 
     // apply yaw rotation
-    cv::warpAffine(local_map,rotated_map,transform,rotated_map.size(),CV_INTER_LINEAR);
+    cv::warpAffine(rotated_map,rotated_map,transform,rotated_map.size(),CV_INTER_LINEAR);
 
     return rotated_map;
 }
