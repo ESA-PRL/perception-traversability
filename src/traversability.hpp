@@ -46,7 +46,7 @@ namespace traversability
 	    void welcome();
 
 	    // parameters setters
-	    void configureTraversability(float max_obstacle, float max_slope);
+	    void configureTraversability(float max_obstacle, float max_slope, float robot_size, float map_resolution);
 	    void setMapParameters(float size_width, float size_height, float resolution, int scale); // Needed??
 	    void setObstacleLaplacian(int kernel_size, float threshold);    // Needed??
             void setObstacleDetection(int kernel_size_o, int iteration_o, int kernel_size_s, int iteration_s); // Needed??
@@ -87,6 +87,8 @@ namespace traversability
             int obstacle_iterations;
             int obstacle_vicinity_kernel_size;
             int obstacle_vicinity_iterations;
+
+            float robot_size;
 
 	    // Obstacle dilation parameters
 	    cv::Mat dilation_kernel;

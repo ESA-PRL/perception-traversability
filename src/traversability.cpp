@@ -26,6 +26,8 @@ using namespace traversability;
 // creator
 Traversability::Traversability()
 {
+    // initialize
+    robot_size = 0.7;
 }
 
 void Traversability::welcome()
@@ -33,9 +35,11 @@ void Traversability::welcome()
     cout << "Welcome!" << endl;
 }
 
-void Traversability::configureTraversability(float max_obstacle, float max_slope)
+void Traversability::configureTraversability(float max_obstacle, float max_slope, float robot_size, float map_resolution)
 {
     elevation_map_set = 1;
+    this->robot_size = robot_size;
+    this->map_resolution = map_resolution;
 }
 
 void Traversability::setObstacleLaplacian(int kernel_size, float threshold)
@@ -328,10 +332,9 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
     // First of all dilate the obstacles in local map
     
     // kernel size is dependant on map resolution and robot width
-    //int kernel_size = (int)(robot_size/(map_resolution)) + 1;
+    int kernel_size = (int)(robot_size/(map_resolution*2.0)) + 1;
     //dilation_iterations = iterations;
     
-    int kernel_size = 71;
     dilation_iterations = 2;
     dilation_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE,
             cv::Size(kernel_size,kernel_size)); // round kernel;
