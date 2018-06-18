@@ -80,11 +80,11 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
     // elevation_map.create()
     for (int i=0; i<width; i++)
     {
-	for (int j=0; j<height; i++)
-	{
-	    //! check what to do with NaN values
-	    elevation_map.at<float>(i, j) = data[i*height+j];
-	}
+        for (int j=0; j<height; i++)
+        {
+            //! check what to do with NaN values
+            elevation_map.at<float>(i, j) = data[i*height+j];
+        }
     }
 }
 
@@ -330,11 +330,11 @@ cv::Mat Traversability::computeTraversability()
 cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
 {
     // First of all dilate the obstacles in local map
-    
+
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size/(map_resolution*2.0)) + 1;
     //dilation_iterations = iterations;
-    
+
     dilation_iterations = 2;
     dilation_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE,
             cv::Size(kernel_size,kernel_size)); // round kernel;
