@@ -335,7 +335,7 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
     // First of all dilate the obstacles in local map
 
     // kernel size is dependant on map resolution and robot width
-    int kernel_size = (int)(robot_size/(map_resolution*2.0)) + 1;
+    int kernel_size = (int)(robot_size/map_resolution) + 1;
     //dilation_iterations = iterations;
 
     dilation_iterations = 2;
