@@ -1,6 +1,7 @@
 /*
  * This file is part of Traversability.
- * Copyright (C) 2018 Martin Azkarate, reuse of Cartographer software oroginally developed by Marco Pagnamenta
+ * Copyright (C) 2018 Martin Azkarate, reuse of Cartographer software oroginally developed by Marco
+ * Pagnamenta
  * Planetary Robotics Lab (PRL), European Space Agency (ESA)
  *
  * Traversability is free software: you can redistribute it and/or modify
@@ -17,9 +18,7 @@
  * along with Traversability. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TRAVERSABILITY_HPP_
-#define _TRAVERSABILITY_HPP_
-
+#pragma once
 
 //! ToDo: Remove unncessary includes
 
@@ -39,84 +38,93 @@
 
 namespace traversability
 {
-    class Traversability
-    {
-    public:
-        Traversability();
-        void welcome();
 
-        // parameters setters
-        void configureTraversability(float max_obstacle, float max_slope, float robot_size, float map_resolution);
-        void setMapParameters(float size_width, float size_height, float resolution, int scale); // Needed??
-        void setObstacleLaplacian(int kernel_size, float threshold);    // Needed??
-        void setObstacleDetection(int kernel_size_o, int iteration_o, int kernel_size_s, int iteration_s); // Needed??
-        void setElevationMap(std::vector<float>, int width, int height);
+class Traversability
+{
+  public:
+    Traversability();
+    void welcome();
 
+    // parameters setters
+    void configureTraversability(float max_obstacle,
+                                 float max_slope,
+                                 float robot_size,
+                                 float map_resolution);
+    void setMapParameters(float size_width,
+                          float size_height,
+                          float resolution,
+                          int scale);                             // Needed??
+    void setObstacleLaplacian(int kernel_size, float threshold);  // Needed??
+    void setObstacleDetection(int kernel_size_o,
+                              int iteration_o,
+                              int kernel_size_s,
+                              int iteration_s);  // Needed??
+    void setElevationMap(std::vector<float>, int width, int height);
 
-        // functionality
-        void elevationMapInterpolate();
-        void elevationMap2SlopeMap();
-        void detectObstacles(float elevation_threshold);
-        void thresholdSlopeMap(float slope_threshold);
-        void dilateObstacles(float robot_size, int iterations);
-        cv::Mat computeTraversability();
+    // functionality
+    void elevationMapInterpolate();
+    void elevationMap2SlopeMap();
+    void detectObstacles(float elevation_threshold);
+    void thresholdSlopeMap(float slope_threshold);
+    void dilateObstacles(float robot_size, int iterations);
+    cv::Mat computeTraversability();
 
-        // local to global rotation
-        cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
-        void local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
+    // local to global rotation
+    cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
+    void local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
 
-        // images/pcl/data getters
+    // images/pcl/data getters
 
-    private:
-        bool elevation_map_set;
+  private:
+    bool elevation_map_set;
 
-        // map parameters
-        float map_size_width;  // in meters
-        float map_size_height; // in meters
-        float map_resolution;  // in meters
-        float map_cells_width; // # of cells in width
-        float map_cells_height;// # of cells in height
-        int slope_map_scale;
+    // map parameters
+    float map_size_width;    // in meters
+    float map_size_height;   // in meters
+    float map_resolution;    // in meters
+    float map_cells_width;   // # of cells in width
+    float map_cells_height;  // # of cells in height
+    int slope_map_scale;
 
-        // Obstacle laplacian parameters
-        int laplacian_kernel_size;
-        float laplacian_threshold;
+    // Obstacle laplacian parameters
+    int laplacian_kernel_size;
+    float laplacian_threshold;
 
-        // Obstacle processing parameters
-        int obstacle_kernel_size;
-        int obstacle_iterations;
-        int obstacle_vicinity_kernel_size;
-        int obstacle_vicinity_iterations;
+    // Obstacle processing parameters
+    int obstacle_kernel_size;
+    int obstacle_iterations;
+    int obstacle_vicinity_kernel_size;
+    int obstacle_vicinity_iterations;
 
-        float robot_size;
+    float robot_size;
 
-        // Obstacle dilation parameters
-        cv::Mat dilation_kernel;
-        int dilation_iterations;
+    // Obstacle dilation parameters
+    cv::Mat dilation_kernel;
+    int dilation_iterations;
 
-        cv::Mat elevation_map;     // elevationmap as converted from pc
-        cv::Mat elevation_map_mask; // elevationmap pixels without data mask
-        cv::Mat elevation_map_mask_scaled; // elevationmap pixels without data mask scaled to slope map
-        cv::Mat elevation_map_interpolated;
-        cv::Mat elevation_map_gradient_x;
-        cv::Mat elevation_map_gradient_y;
+    cv::Mat elevation_map;              // elevationmap as converted from pc
+    cv::Mat elevation_map_mask;         // elevationmap pixels without data mask
+    cv::Mat elevation_map_mask_scaled;  // elevationmap pixels without data mask scaled to slope map
+    cv::Mat elevation_map_interpolated;
+    cv::Mat elevation_map_gradient_x;
+    cv::Mat elevation_map_gradient_y;
 
-        cv::Mat slope_map;      // slopemap built from subsampled gradient
-        cv::Mat slope_map_mask; // slopemap pixels without data mask
-        cv::Mat slope_map_thresholded; // slopemap thresholded
+    cv::Mat slope_map;              // slopemap built from subsampled gradient
+    cv::Mat slope_map_mask;         // slopemap pixels without data mask
+    cv::Mat slope_map_thresholded;  // slopemap thresholded
 
-        cv::Mat elevation_map_laplacian; // laplacian of the elevationmap
-        cv::Mat elevation_map_laplacian_thresholded; // laplacian thresholded
+    cv::Mat elevation_map_laplacian;              // laplacian of the elevationmap
+    cv::Mat elevation_map_laplacian_thresholded;  // laplacian thresholded
 
-        cv::Mat obstacle_map; // binary map of unsurmontable obstacles
+    cv::Mat obstacle_map;  // binary map of unsurmontable obstacles
 
-        cv::Mat traversability_map; // accessible and inaccessible map
+    cv::Mat traversability_map;  // accessible and inaccessible map
 
-        int insert_rows, insert_cols; // nrows and ncols of the map local mpa being integrated in the global one
-        cv::Mat rotated_map; // rotated input mapp to add
-        cv::Mat rotated_mask_map;
+    // nrows and ncols of the map local mpa being integrated in the global one
+    int insert_rows;
+    int insert_cols;
+    cv::Mat rotated_map;  // rotated input mapp to add
+    cv::Mat rotated_mask_map;
+};
 
-    };
-}
-
-#endif
+}  // namespace traversability

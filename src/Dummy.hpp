@@ -1,18 +1,16 @@
-#ifndef _DUMMYPROJECT_DUMMY_HPP_
-#define _DUMMYPROJECT_DUMMY_HPP_
+#pragma once
 
 namespace traversability
 {
-    class DummyClass
-    {
-        public: 
-            /**
-             * Print a welcome to stdout
-             * \return nothing
-             */
-            void welcome();
-    };
 
-} // end namespace traversability
+class DummyClass
+{
+  public:
+    /**
+     * Print a welcome to stdout
+     * \return nothing
+     */
+    void welcome();
+};
 
-#endif // _DUMMYPROJECT_DUMMY_HPP_
+}  // end namespace traversability
