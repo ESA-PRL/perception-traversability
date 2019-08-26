@@ -30,16 +30,17 @@ Traversability::Traversability()
     robot_size = 0.7;
 }
 
-void Traversability::welcome() { cout << "Welcome!" << endl; }
-
 void Traversability::configureTraversability(float max_obstacle,
                                              float max_slope,
                                              float robot_size,
-                                             float map_resolution)
+                                             float map_resolution,
+                                             int slope_map_scale);
 {
-    elevation_map_set = 1;
+    this->elevation_threshold = max_obstacle;
+    this->slope_threshold = max_slope;
     this->robot_size = robot_size;
     this->map_resolution = map_resolution;
+    this->slope_map_scale = slope_map_scale;
 }
 
 void Traversability::setObstacleLaplacian(int kernel_size, float threshold)
@@ -59,30 +60,12 @@ void Traversability::setObstacleDetection(int kernel_size_o,
     obstacle_vicinity_iterations = iteration_s;
 }
 
-void Traversability::setMapParameters(float size_width,
-                                      float size_height,
-                                      float resolution,
-                                      int scale)
-{
-    map_size_width = size_width;
-    map_size_height = size_height;
-    map_resolution = resolution;
-    map_cells_width = floor(map_size_width / map_resolution);
-    map_cells_height = floor(map_size_height / map_resolution);
-
-    // prepare elevation map
-    elevation_map.create(map_cells_width, map_cells_height, CV_32FC1);
-    elevation_map_mask.create(map_cells_width, map_cells_height, CV_8UC1);
-
-    slope_map_scale = scale;
-}
-
 void Traversability::setElevationMap(std::vector<float> data, int width, int height)
 {
-    // delete previous
-    // elevation_map.reset
-    // reserve space for new map
-    // elevation_map.create()
+    // prepare elevation map
+    elevation_map.create(width, height, CV_32FC1);
+    elevation_map_mask.create(width, height, CV_8UC1);
+
     for (int i = 0; i < width; i++)
     {
         for (int j = 0; j < height; i++)
@@ -242,7 +225,7 @@ void Traversability::elevationMap2SlopeMap()
     interpSlope.copyTo(slope_map, elevation_map_mask_scaled);
 }
 
-void Traversability::thresholdSlopeMap(float slope_threshold)
+void Traversability::thresholdSlopeMap()
 {
     // Threshold the slope map to tag slopes that are not traversable
     // TODO unterstand why it is slope_map_scale^2 (probably because scaled in two directions)
@@ -257,7 +240,7 @@ void Traversability::thresholdSlopeMap(float slope_threshold)
     cv::threshold(slope_map, slope_map_thresholded, threshold, 1.0f, cv::THRESH_BINARY);
 }
 
-void Traversability::detectObstacles(float elevation_threshold)
+void Traversability::detectObstacles()
 {
     cv::Mat interpLaplacian;
 
@@ -268,7 +251,7 @@ void Traversability::detectObstacles(float elevation_threshold)
     elevation_map_laplacian.setTo(0);
     interpLaplacian.copyTo(elevation_map_laplacian, elevation_map_mask);
 
-    // The obstacle map is based on the laplacien image and a threshold defines probably obstacles
+    // The obstacle map is based on the laplacien image and a threshold defines probable obstacles
     // TODO sure it is so? -laplacian or abs(laplacian)[
     cv::threshold(-elevation_map_laplacian,
                   elevation_map_laplacian_thresholded,
@@ -357,7 +340,7 @@ void Traversability::detectObstacles(float elevation_threshold)
     obstacle_mask.convertTo(obstacle_map, CV_32FC1);
 }
 
-void Traversability::dilateObstacles(float robot_size, int iterations)
+void Traversability::dilateTraversability(int iterations)
 {
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size / map_resolution) + 1;
@@ -375,6 +358,11 @@ void Traversability::dilateObstacles(float robot_size, int iterations)
 
 cv::Mat Traversability::computeTraversability()
 {
+    elevationMapInterpolate();
+    elevationMap2SlopeMap();
+    thresholdSlopeMap();
+    detectObstacles();
+
     // combine two traversability if feasible
     cv::Mat t1, t2;
     obstacle_map.convertTo(
@@ -384,6 +372,9 @@ cv::Mat Traversability::computeTraversability()
     cv::multiply(t2, 255, t2);
     cv::bitwise_or(t1, t2, traversability_map);
     traversability_map.convertTo(traversability_map, CV_32FC1);
+
+    dilateTraversability(iterations);
+
     return traversability_map;
 }
 
