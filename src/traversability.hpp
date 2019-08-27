@@ -45,16 +45,18 @@ class Traversability
     Traversability();
 
     // parameters setters
-    void configureTraversability(float max_obstacle,
-                                 float max_slope,
+    void configureTraversability(float map_resolution,
+                                 int slope_map_scale,
+                                 float slope_threshold,
+                                 float elevation_threshold,
+                                 int laplacian_kernel_size,
+                                 float laplacian_threshold,
+                                 int obstacle_kernel_size,
+                                 int obstacle_iterations,
+                                 int obstacle_vicinity_kernel_size,
+                                 int obstacle_vicinity_iterations,
                                  float robot_size,
-                                 float map_resolution,
-                                 int slope_map_scale);
-    void setObstacleLaplacian(int kernel_size, float threshold);  // Needed??
-    void setObstacleDetection(int kernel_size_o,
-                              int iteration_o,
-                              int kernel_size_s,
-                              int iteration_s);  // Needed??
+                                 int dilation_iterations);
     void setElevationMap(std::vector<float>, int width, int height);
 
     // functionality
@@ -62,7 +64,7 @@ class Traversability
     void elevationMap2SlopeMap();
     void detectObstacles();
     void thresholdSlopeMap();
-    void dilateTraversability(int iterations);
+    void dilateTraversability();
     cv::Mat computeTraversability();
 
     // local to global rotation
@@ -86,10 +88,9 @@ class Traversability
 
     float elevation_threshold;
     float slope_threshold;
-    float robot_size;  // in meters
 
-    // Obstacle dilation parameters
-    cv::Mat dilation_kernel;
+    // Traversability dilation parameters
+    float robot_size;  // in meters
     int dilation_iterations;
 
     cv::Mat elevation_map;              // elevationmap as converted from pc

@@ -30,34 +30,31 @@ Traversability::Traversability()
     robot_size = 0.7;
 }
 
-void Traversability::configureTraversability(float max_obstacle,
-                                             float max_slope,
+void Traversability::configureTraversability(float map_resolution,
+                                             int slope_map_scale,
+                                             float slope_threshold,
+                                             float elevation_threshold,
+                                             int laplacian_kernel_size,
+                                             float laplacian_threshold,
+                                             int obstacle_kernel_size,
+                                             int obstacle_iterations,
+                                             int obstacle_vicinity_kernel_size,
+                                             int obstacle_vicinity_iterations,
                                              float robot_size,
-                                             float map_resolution,
-                                             int slope_map_scale);
+                                             int dilation_iterations)
 {
-    this->elevation_threshold = max_obstacle;
-    this->slope_threshold = max_slope;
-    this->robot_size = robot_size;
     this->map_resolution = map_resolution;
     this->slope_map_scale = slope_map_scale;
-}
-
-void Traversability::setObstacleLaplacian(int kernel_size, float threshold)
-{
-    laplacian_kernel_size = kernel_size;
-    laplacian_threshold = threshold;
-}
-
-void Traversability::setObstacleDetection(int kernel_size_o,
-                                          int iteration_o,
-                                          int kernel_size_s,
-                                          int iteration_s)
-{
-    obstacle_kernel_size = kernel_size_o;
-    obstacle_iterations = iteration_o;
-    obstacle_vicinity_kernel_size = kernel_size_s;
-    obstacle_vicinity_iterations = iteration_s;
+    this->slope_threshold = slope_threshold;
+    this->elevation_threshold = elevation_threshold;
+    this->laplacian_kernel_size = laplacian_kernel_size;
+    this->laplacian_threshold = laplacian_threshold;
+    this->obstacle_kernel_size = obstacle_kernel_size;
+    this->obstacle_iterations = obstacle_iterations;
+    this->obstacle_vicinity_kernel_size = obstacle_vicinity_kernel_size;
+    this->obstacle_vicinity_iterations = obstacle_vicinity_iterations;
+    this->robot_size = robot_size;
+    this->dilation_iterations = dilation_iterations;
 }
 
 void Traversability::setElevationMap(std::vector<float> data, int width, int height)
@@ -74,6 +71,9 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
             elevation_map.at<float>(i, j) = data[i * height + j];
         }
     }
+
+    // set mask values to zero if field is NaN in elevation map (since NaN != NaN), otherwise to one
+    elevation_map_mask = cv::Mat(elevation_map == elevation_map);
 }
 
 void Traversability::elevationMapInterpolate()
@@ -340,13 +340,12 @@ void Traversability::detectObstacles()
     obstacle_mask.convertTo(obstacle_map, CV_32FC1);
 }
 
-void Traversability::dilateTraversability(int iterations)
+void Traversability::dilateTraversability()
 {
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size / map_resolution) + 1;
-    dilation_kernel = cv::getStructuringElement(
+    cv::Mat dilation_kernel = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(kernel_size, kernel_size));  // round kernel;
-    dilation_iterations = iterations;
 
     // Check here dilation computation
     cv::dilate(traversability_map,
@@ -363,17 +362,17 @@ cv::Mat Traversability::computeTraversability()
     thresholdSlopeMap();
     detectObstacles();
 
-    // combine two traversability if feasible
+    // combine two traversability
     cv::Mat t1, t2;
     obstacle_map.convertTo(
         t1, CV_8UC1);  // TODO decide what to do with map types *masks should be all 8UC1?
     slope_map_thresholded.convertTo(t2, CV_8UC1);
-    // multiplication because of previous comment
-    cv::multiply(t2, 255, t2);
+    // // multiplication because of previous comment
+    // cv::multiply(t2, 255, t2);
     cv::bitwise_or(t1, t2, traversability_map);
     traversability_map.convertTo(traversability_map, CV_32FC1);
 
-    dilateTraversability(iterations);
+    dilateTraversability();
 
     return traversability_map;
 }
@@ -384,10 +383,8 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
 
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size / map_resolution) + 1;
-    // dilation_iterations = iterations;
 
-    dilation_iterations = 2;
-    dilation_kernel = cv::getStructuringElement(
+    cv::Mat dilation_kernel = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(kernel_size, kernel_size));  // round kernel;
 
     // Check here dilation computation
