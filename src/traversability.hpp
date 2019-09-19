@@ -20,22 +20,9 @@
 
 #pragma once
 
-//! ToDo: Remove unncessary includes
-
 // OpenCV
-#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-// PCL  -> Delete all probably
-//#include <pcl/filters/statistical_outlier_removal.h>
-//#include <pcl/filters/voxel_grid.h>
-//#include <pcl/filters/crop_box.h>
-//#include <pcl/features/normal_3d.h>
-//#include <pcl/common/transforms.h>
-
-// Sys -> Delete probably
-#include <sys/time.h>
 
 namespace traversability
 {
