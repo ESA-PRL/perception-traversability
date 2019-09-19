@@ -18,8 +18,10 @@
  * along with Traversability. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "traversability.hpp"
+#include <cmath>
 #include <iostream>
+
+#include "traversability.hpp"
 
 using namespace std;
 using namespace traversability;
@@ -65,7 +67,7 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
 
     for (int i = 0; i < width; i++)
     {
-        for (int j = 0; j < height; i++)
+        for (int j = 0; j < height; j++)
         {
             //! check what to do with NaN values
             elevation_map.at<float>(i, j) = data[i * height + j];
@@ -199,27 +201,35 @@ void Traversability::elevationMap2SlopeMap()
                sample_scale,
                cv::INTER_NEAREST);
     cv::resize(elevation_map_interpolated,
-               interpSlope,
+               elevation_map_scaled,
                cv::Size(),
                sample_scale,
                sample_scale,
                cv::INTER_LINEAR);
 
     // Find gradient along x and y directions
-    cv::Mat elevation_map_gradient_x, elevation_map_gradient_y;
-    cv::Sobel(interpSlope, elevation_map_gradient_x, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
-    cv::Sobel(interpSlope, elevation_map_gradient_y, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT);
+    // Scale factor of 1/8 to normalize 3x3 kernel
+    cv::Sobel(elevation_map_scaled,
+              elevation_map_gradient_x,
+              CV_32FC1,
+              1,
+              0,
+              3,
+              0.125,
+              0,
+              cv::BORDER_DEFAULT);
+    cv::Sobel(elevation_map_scaled,
+              elevation_map_gradient_y,
+              CV_32FC1,
+              0,
+              1,
+              3,
+              0.125,
+              0,
+              cv::BORDER_DEFAULT);
 
-    // Square the x and y gradient matrices, this makes them positive, needed to obtain absolute
-    // slope value
-    cv::pow(elevation_map_gradient_x, 2, elevation_map_gradient_x);
-    cv::pow(elevation_map_gradient_y, 2, elevation_map_gradient_y);
-
-    // Add squared slope of x and y together
-    cv::add(elevation_map_gradient_x, elevation_map_gradient_y, interpSlope);
-
-    // Take the square root to get the real slope
-    cv::sqrt(interpSlope, interpSlope);
+    // Get magnitude map of xy gradient
+    cv::magnitude(elevation_map_gradient_x, elevation_map_gradient_y, interpSlope);
 
     // Apply the mask to extract only the valid data TODO also resize already?
     interpSlope.copyTo(slope_map, elevation_map_mask_scaled);
@@ -228,9 +238,7 @@ void Traversability::elevationMap2SlopeMap()
 void Traversability::thresholdSlopeMap()
 {
     // Threshold the slope map to tag slopes that are not traversable
-    // TODO unterstand why it is slope_map_scale^2 (probably because scaled in two directions)
-    float threshold = slope_threshold * slope_map_scale * slope_map_scale
-                      * map_resolution;  // tan(st)=t/(sms*sms*hr)
+    float threshold = std::tan(slope_threshold) * slope_map_scale * map_resolution;
     cv::resize(slope_map,
                slope_map,
                cv::Size(elevation_map.cols, elevation_map.rows),
@@ -244,8 +252,12 @@ void Traversability::detectObstacles()
 {
     cv::Mat interpLaplacian;
 
-    // Find the obstacles with a Laplace filter (gradients)
-    cv::Laplacian(elevation_map_interpolated, interpLaplacian, CV_32FC1, laplacian_kernel_size);
+    // Find the obstacles with a Laplace filter (gradients) and normalize kernel
+    cv::Laplacian(elevation_map_interpolated,
+                  interpLaplacian,
+                  CV_32FC1,
+                  laplacian_kernel_size,
+                  1.0 / std::pow(2, laplacian_kernel_size * 2 - 6));
 
     // Mask the laplacian to remove invalid interpolated data
     elevation_map_laplacian.setTo(0);
@@ -364,15 +376,35 @@ cv::Mat Traversability::computeTraversability()
 
     // combine two traversability
     cv::Mat t1, t2;
-    obstacle_map.convertTo(
-        t1, CV_8UC1);  // TODO decide what to do with map types *masks should be all 8UC1?
+    obstacle_map.convertTo(t1, CV_8UC1);
     slope_map_thresholded.convertTo(t2, CV_8UC1);
-    // // multiplication because of previous comment
-    // cv::multiply(t2, 255, t2);
     cv::bitwise_or(t1, t2, traversability_map);
-    traversability_map.convertTo(traversability_map, CV_32FC1);
+    cv::multiply(traversability_map, 255, traversability_map);
 
     dilateTraversability();
+
+    cv::Mat dst;
+    cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map", dst);
+    cv::imshow("Elevation map mask", elevation_map_mask);
+    cv::imshow("Elevation map mask scaled", elevation_map_mask_scaled);
+    cv::normalize(elevation_map_interpolated, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map interpolated", dst);
+    cv::normalize(elevation_map_gradient_x, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient x", dst);
+    cv::normalize(elevation_map_gradient_y, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient y", dst);
+    cv::normalize(slope_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Slope map", dst);
+    cv::imshow("Slope map thresholded", slope_map_thresholded);
+    cv::normalize(elevation_map_laplacian, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map laplacian", dst);
+    cv::imshow("Elevation map laplacian thresholded", elevation_map_laplacian_thresholded);
+    cv::normalize(obstacle_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Obstacle map", dst);
+    cv::multiply(traversability_map, 255, dst);
+    cv::imshow("Traversability", dst);
+    cv::waitKey(1);
 
     return traversability_map;
 }

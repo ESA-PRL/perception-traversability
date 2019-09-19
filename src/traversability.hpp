@@ -24,6 +24,7 @@
 
 // OpenCV
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 // PCL  -> Delete all probably
@@ -94,6 +95,7 @@ class Traversability
     int dilation_iterations;
 
     cv::Mat elevation_map;              // elevationmap as converted from pc
+    cv::Mat elevation_map_scaled;
     cv::Mat elevation_map_mask;         // elevationmap pixels without data mask
     cv::Mat elevation_map_mask_scaled;  // elevationmap pixels without data mask scaled to slope map
     cv::Mat elevation_map_interpolated;
@@ -101,7 +103,6 @@ class Traversability
     cv::Mat elevation_map_gradient_y;
 
     cv::Mat slope_map;              // slopemap built from subsampled gradient
-    cv::Mat slope_map_mask;         // slopemap pixels without data mask
     cv::Mat slope_map_thresholded;  // slopemap thresholded
 
     cv::Mat elevation_map_laplacian;              // laplacian of the elevationmap
