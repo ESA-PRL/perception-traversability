@@ -69,13 +69,21 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
     {
         for (int j = 0; j < height; j++)
         {
-            //! check what to do with NaN values
-            elevation_map.at<float>(i, j) = data[i * height + j];
+            float value = data[i * height + j];
+
+            // check for NaN
+            if (value != value)
+            {
+                elevation_map.at<float>(i, j) = 0.0;
+                elevation_map_mask.at<unsigned char>(i, j) = 0;
+            }
+            else
+            {
+                elevation_map.at<float>(i, j) = value;
+                elevation_map_mask.at<unsigned char>(i, j) = 255;
+            }
         }
     }
-
-    // set mask values to zero if field is NaN in elevation map (since NaN != NaN), otherwise to one
-    elevation_map_mask = cv::Mat(elevation_map == elevation_map);
 }
 
 void Traversability::elevationMapInterpolate()
