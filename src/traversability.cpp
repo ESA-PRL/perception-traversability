@@ -70,10 +70,8 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
         for (int j = 0; j < height; j++)
         {
             float value = data[i * height + j];
-            bool is_nan = std::isnan(value);
-
-            elevation_map.at<float>(i, j) = is_nan ? 0.0 : value;
-            elevation_map_mask.at<unsigned char>(i, j) = is_nan ? 0 : 255;
+            elevation_map.at<float>(i, j) = value;
+            elevation_map_mask.at<unsigned char>(i, j) = std::isnan(value) ? 0 : 255;
         }
     }
 }
@@ -93,7 +91,7 @@ void Traversability::elevationMapInterpolate()
 
     for (column = 0; column < elevation_map.cols; column++)
     {
-        value_previous = 0.0f;
+        value_previous = std::nan("");
         start_index = -1;
         end_index = -1;
 
@@ -102,13 +100,13 @@ void Traversability::elevationMapInterpolate()
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
             {
                 // Start of the missing data is the previous cell
                 start_index = row - 1;
                 start_value = value_previous;
             }
-            else if (start_index != -1 && value != 0.0f && value_previous == 0.0f)
+            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
             {
                 // End of the missing data
                 end_index = row;
@@ -135,7 +133,7 @@ void Traversability::elevationMapInterpolate()
     // ptu
     for (row = 0; row < elevation_map.rows; row++)
     {
-        value_previous = 0.0f;
+        value_previous = std::nan("");
         start_index = -1;
         end_index = -1;
 
@@ -144,13 +142,13 @@ void Traversability::elevationMapInterpolate()
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
             {
                 // Start of the missing data is the previous cell
                 start_index = column - 1;
                 start_value = value_previous;
             }
-            else if (start_index != -1 && value != 0.0f && value_previous == 0.0f)
+            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
             {
                 // End of the missing data
                 end_index = column;
