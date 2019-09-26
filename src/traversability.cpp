@@ -94,28 +94,21 @@ void Traversability::elevationMapInterpolate()
     for (column = 0; column < elevation_map.cols; column++)
     {
         value_previous = 0.0f;
-        start_index = 0;
-        end_index = 0;
+        start_index = -1;
+        end_index = -1;
 
         for (row = 0; row < elevation_map.rows; row++)
         {
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (row == 0 && value == 0.0f)
-            {
-                // First value in row is missing, assign 0.0f for start
-                start_index = 0;
-                start_value = 0.0f;
-            }
-            else if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
             {
                 // Start of the missing data is the previous cell
                 start_index = row - 1;
                 start_value = value_previous;
             }
-            else if ((value != 0.0f && value_previous == 0.0f)
-                     || (value == 0.0f && row == elevation_map.rows - 1 && start_index != -1))
+            else if (start_index != -1 && value != 0.0f && value_previous == 0.0f)
             {
                 // End of the missing data
                 end_index = row;
@@ -143,28 +136,21 @@ void Traversability::elevationMapInterpolate()
     for (row = 0; row < elevation_map.rows; row++)
     {
         value_previous = 0.0f;
-        start_index = 0;
-        end_index = 0;
+        start_index = -1;
+        end_index = -1;
 
         for (column = 0; column < elevation_map.cols; column++)
         {
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (column == 0 && value == 0.0f)
-            {
-                // First value in row is missing, assign 0.0f for start
-                start_index = 0;
-                start_value = 0.0f;
-            }
-            else if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
             {
                 // Start of the missing data is the previous cell
                 start_index = column - 1;
                 start_value = value_previous;
             }
-            else if ((value != 0.0f && value_previous == 0.0f)
-                     || (value == 0.0f && column == elevation_map.cols - 1 && start_index != -1))
+            else if (start_index != -1 && value != 0.0f && value_previous == 0.0f)
             {
                 // End of the missing data
                 end_index = column;
