@@ -70,18 +70,10 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
         for (int j = 0; j < height; j++)
         {
             float value = data[i * height + j];
+            bool is_nan = std::isnan(value);
 
-            // check for NaN
-            if (value != value)
-            {
-                elevation_map.at<float>(i, j) = 0.0;
-                elevation_map_mask.at<unsigned char>(i, j) = 0;
-            }
-            else
-            {
-                elevation_map.at<float>(i, j) = value;
-                elevation_map_mask.at<unsigned char>(i, j) = 255;
-            }
+            elevation_map.at<float>(i, j) = is_nan ? 0.0 : value;
+            elevation_map_mask.at<unsigned char>(i, j) = is_nan ? 0 : 255;
         }
     }
 }
