@@ -234,18 +234,12 @@ void Traversability::thresholdSlopeMap()
 
 void Traversability::detectObstacles()
 {
-    cv::Mat interpLaplacian;
-
     // Find the obstacles with a Laplace filter (gradients) and normalize kernel
     cv::Laplacian(elevation_map_interpolated,
-                  interpLaplacian,
+                  elevation_map_laplacian,
                   CV_32FC1,
                   laplacian_kernel_size,
                   1.0 / std::pow(2, laplacian_kernel_size * 2 - 6));
-
-    // Mask the laplacian to remove invalid interpolated data
-    elevation_map_laplacian.setTo(0);
-    interpLaplacian.copyTo(elevation_map_laplacian, elevation_map_mask);
 
     // The obstacle map is based on the laplacien image and a threshold defines probable obstacles
     // TODO sure it is so? -laplacian or abs(laplacian)[
