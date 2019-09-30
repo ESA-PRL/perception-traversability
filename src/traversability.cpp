@@ -258,26 +258,24 @@ void Traversability::detectObstacles()
     elevation_map_laplacian_thresholded.convertTo(contour_mask, CV_8UC1);
     cv::dilate(contour_mask, contour_mask, element, cv::Point(-1, -1), obstacle_iterations);
     std::vector<std::vector<cv::Point>> contours;
-    findContours(contour_mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    findContours(contour_mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
     // prepare variables used to iterate through the single obstacles
     cv::Mat single_contour_mask;
     cv::Mat single_surround_mask;
-    cv::Mat combined_mask;
     cv::Mat obstacle_mask;
     contour_mask.copyTo(single_contour_mask);  // todo unsure if 4 lines useful
     contour_mask.copyTo(single_surround_mask);
-    contour_mask.copyTo(combined_mask);
     contour_mask.copyTo(obstacle_mask);
     obstacle_mask.setTo(cv::Scalar(0));
     obstacle_map.setTo(cv::Scalar(0));
 
     int nContours = contours.size();
-    double maxVal[nContours];
-    double minVal[nContours];  // todo set up so that holes can be found out too
-    double inside_mean[nContours];
-    double outside_mean[nContours];
-    int obstacle_check[nContours];
+    double inside_min;
+    double inside_max;
+    double outside_min;
+    double outside_max;
+
     element = cv::getStructuringElement(
         cv::MORPH_RECT,
         cv::Size(obstacle_vicinity_kernel_size, obstacle_vicinity_kernel_size));  // square kernel
@@ -303,28 +301,19 @@ void Traversability::detectObstacles()
         // keep original mask
         cv::bitwise_xor(single_contour_mask, single_surround_mask, single_surround_mask);
 
-        // remove regions where we do not have elevationmap data
-        cv::bitwise_and(elevation_map_mask, single_contour_mask, single_contour_mask);
-        cv::bitwise_and(elevation_map_mask, single_surround_mask, single_surround_mask);
-        inside_mean[iContour] = cv::mean(elevation_map, single_contour_mask)[0];
-        outside_mean[iContour] = cv::mean(elevation_map, single_surround_mask)[0];
-
         // TODO check again because now peak relies on only one point
         // (should be like top 3 or 5 points)
         cv::minMaxLoc(
-            elevation_map, &minVal[iContour], &maxVal[iContour], NULL, NULL, single_contour_mask);
+            elevation_map, &inside_min, &inside_max, NULL, NULL, single_contour_mask);
+        cv::minMaxLoc(
+            elevation_map, &outside_min, &outside_max, NULL, NULL, single_surround_mask);
 
         // if this is indeed an obstacle
-        if ((maxVal[iContour] - outside_mean[iContour]) > elevation_threshold)
+        if ((inside_max - outside_min) > elevation_threshold
+            || (outside_max - inside_min) > elevation_threshold)
         {
-            obstacle_check[iContour] = 1;
-
             // add obstacle to total obstacle mask
             cv::bitwise_or(single_contour_mask, obstacle_mask, obstacle_mask);
-        }
-        else
-        {
-            obstacle_check[iContour] = 0;
         }
     }
     obstacle_mask.convertTo(obstacle_map, CV_32FC1);
@@ -380,8 +369,7 @@ cv::Mat Traversability::computeTraversability()
     cv::imshow("Elevation map laplacian thresholded", elevation_map_laplacian_thresholded);
     cv::normalize(obstacle_map, dst, 0, 1, cv::NORM_MINMAX);
     cv::imshow("Obstacle map", dst);
-    cv::multiply(traversability_map, 255, dst);
-    cv::imshow("Traversability", dst);
+    cv::imshow("Traversability", traversability_map);
     cv::waitKey(1);
 
     return traversability_map;
