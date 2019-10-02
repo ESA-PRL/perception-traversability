@@ -372,6 +372,10 @@ cv::Mat Traversability::computeTraversability()
     cv::imshow("Traversability", traversability_map);
     cv::waitKey(1);
 
+    // Rotate -90 degress for path planner global map convention
+    cv::transpose(traversability_map, traversability_map);
+    cv::flip(traversability_map, traversability_map, 1); // flip vertically
+
     return traversability_map;
 }
 
