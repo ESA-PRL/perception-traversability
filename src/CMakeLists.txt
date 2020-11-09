@@ -3,11 +3,10 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-
 rock_library(traversability
     SOURCES traversability.cpp
     HEADERS traversability.hpp
-    DEPS_PKGCONFIG opencv)
+    DEPS_PKGCONFIG ${OPENCV_PACKAGE})
 
 rock_executable(traversability_bin Main.cpp
     DEPS traversability)
