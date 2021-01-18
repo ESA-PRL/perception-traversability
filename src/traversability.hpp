@@ -81,10 +81,10 @@ class Traversability
     float robot_size;  // in meters
     int dilation_iterations;
 
-    cv::Mat elevation_map;              // elevationmap as converted from pc
+    cv::Mat elevation_map;              // elevation map as converted from pc
     cv::Mat elevation_map_scaled;
-    cv::Mat elevation_map_mask;         // elevationmap pixels without data mask
-    cv::Mat elevation_map_mask_scaled;  // elevationmap pixels without data mask scaled to slope map
+    cv::Mat elevation_map_mask;         // elevation map pixels without data mask
+    cv::Mat elevation_map_mask_scaled;  // elevation map pixels without data mask scaled to slope map
     cv::Mat elevation_map_interpolated;
     cv::Mat elevation_map_gradient_x;
     cv::Mat elevation_map_gradient_y;
@@ -92,7 +92,7 @@ class Traversability
     cv::Mat slope_map;              // slopemap built from subsampled gradient
     cv::Mat slope_map_thresholded;  // slopemap thresholded
 
-    cv::Mat elevation_map_laplacian;              // laplacian of the elevationmap
+    cv::Mat elevation_map_laplacian;              // laplacian of the elevation map
     cv::Mat elevation_map_laplacian_thresholded;  // laplacian thresholded
 
     cv::Mat obstacle_map;  // binary map of unsurmontable obstacles
@@ -102,7 +102,7 @@ class Traversability
     // nrows and ncols of the map local mpa being integrated in the global one
     int insert_rows;
     int insert_cols;
-    cv::Mat rotated_map;  // rotated input mapp to add
+    cv::Mat rotated_map;  // rotated input map to add
     cv::Mat rotated_mask_map;
 };
 
