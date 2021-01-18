@@ -18,8 +18,10 @@
  * along with Traversability. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "traversability.hpp"
+#include <cmath>
 #include <iostream>
+
+#include "traversability.hpp"
 
 using namespace std;
 using namespace traversability;
@@ -30,65 +32,46 @@ Traversability::Traversability()
     robot_size = 0.7;
 }
 
-void Traversability::welcome() { cout << "Welcome!" << endl; }
-
-void Traversability::configureTraversability(float max_obstacle,
-                                             float max_slope,
+void Traversability::configureTraversability(float map_resolution,
+                                             int slope_map_scale,
+                                             float slope_threshold,
+                                             float elevation_threshold,
+                                             int laplacian_kernel_size,
+                                             float laplacian_threshold,
+                                             int obstacle_kernel_size,
+                                             int obstacle_iterations,
+                                             int obstacle_vicinity_kernel_size,
+                                             int obstacle_vicinity_iterations,
                                              float robot_size,
-                                             float map_resolution)
+                                             int dilation_iterations)
 {
-    elevation_map_set = 1;
-    this->robot_size = robot_size;
     this->map_resolution = map_resolution;
-}
-
-void Traversability::setObstacleLaplacian(int kernel_size, float threshold)
-{
-    laplacian_kernel_size = kernel_size;
-    laplacian_threshold = threshold;
-}
-
-void Traversability::setObstacleDetection(int kernel_size_o,
-                                          int iteration_o,
-                                          int kernel_size_s,
-                                          int iteration_s)
-{
-    obstacle_kernel_size = kernel_size_o;
-    obstacle_iterations = iteration_o;
-    obstacle_vicinity_kernel_size = kernel_size_s;
-    obstacle_vicinity_iterations = iteration_s;
-}
-
-void Traversability::setMapParameters(float size_width,
-                                      float size_height,
-                                      float resolution,
-                                      int scale)
-{
-    map_size_width = size_width;
-    map_size_height = size_height;
-    map_resolution = resolution;
-    map_cells_width = floor(map_size_width / map_resolution);
-    map_cells_height = floor(map_size_height / map_resolution);
-
-    // prepare elevation map
-    elevation_map.create(map_cells_width, map_cells_height, CV_32FC1);
-    elevation_map_mask.create(map_cells_width, map_cells_height, CV_8UC1);
-
-    slope_map_scale = scale;
+    this->slope_map_scale = slope_map_scale;
+    this->slope_threshold = slope_threshold;
+    this->elevation_threshold = elevation_threshold;
+    this->laplacian_kernel_size = laplacian_kernel_size;
+    this->laplacian_threshold = laplacian_threshold;
+    this->obstacle_kernel_size = obstacle_kernel_size;
+    this->obstacle_iterations = obstacle_iterations;
+    this->obstacle_vicinity_kernel_size = obstacle_vicinity_kernel_size;
+    this->obstacle_vicinity_iterations = obstacle_vicinity_iterations;
+    this->robot_size = robot_size;
+    this->dilation_iterations = dilation_iterations;
 }
 
 void Traversability::setElevationMap(std::vector<float> data, int width, int height)
 {
-    // delete previous
-    // elevation_map.reset
-    // reserve space for new map
-    // elevation_map.create()
+    // prepare elevation map
+    elevation_map.create(width, height, CV_32FC1);
+    elevation_map_mask.create(width, height, CV_8UC1);
+
     for (int i = 0; i < width; i++)
     {
-        for (int j = 0; j < height; i++)
+        for (int j = 0; j < height; j++)
         {
-            //! check what to do with NaN values
-            elevation_map.at<float>(i, j) = data[i * height + j];
+            float value = data[i * height + j];
+            elevation_map.at<float>(i, j) = value;
+            elevation_map_mask.at<unsigned char>(i, j) = std::isnan(value) ? 0 : 255;
         }
     }
 }
@@ -108,29 +91,22 @@ void Traversability::elevationMapInterpolate()
 
     for (column = 0; column < elevation_map.cols; column++)
     {
-        value_previous = 0.0f;
-        start_index = 0;
-        end_index = 0;
+        value_previous = std::nan("");
+        start_index = -1;
+        end_index = -1;
 
         for (row = 0; row < elevation_map.rows; row++)
         {
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (row == 0 && value == 0.0f)
-            {
-                // First value in row is missing, assign 0.0f for start
-                start_index = 0;
-                start_value = 0.0f;
-            }
-            else if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
             {
                 // Start of the missing data is the previous cell
                 start_index = row - 1;
                 start_value = value_previous;
             }
-            else if ((value != 0.0f && value_previous == 0.0f)
-                     || (value == 0.0f && row == elevation_map.rows - 1 && start_index != -1))
+            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
             {
                 // End of the missing data
                 end_index = row;
@@ -157,29 +133,22 @@ void Traversability::elevationMapInterpolate()
     // ptu
     for (row = 0; row < elevation_map.rows; row++)
     {
-        value_previous = 0.0f;
-        start_index = 0;
-        end_index = 0;
+        value_previous = std::nan("");
+        start_index = -1;
+        end_index = -1;
 
         for (column = 0; column < elevation_map.cols; column++)
         {
             // Get the pixel value in the matrix
             value = elevation_map_interpolated.at<float>(row, column);
 
-            if (column == 0 && value == 0.0f)
-            {
-                // First value in row is missing, assign 0.0f for start
-                start_index = 0;
-                start_value = 0.0f;
-            }
-            else if (start_index == -1 && value == 0.0f && value_previous != 0.0f)
+            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
             {
                 // Start of the missing data is the previous cell
                 start_index = column - 1;
                 start_value = value_previous;
             }
-            else if ((value != 0.0f && value_previous == 0.0f)
-                     || (value == 0.0f && column == elevation_map.cols - 1 && start_index != -1))
+            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
             {
                 // End of the missing data
                 end_index = column;
@@ -216,38 +185,44 @@ void Traversability::elevationMap2SlopeMap()
                sample_scale,
                cv::INTER_NEAREST);
     cv::resize(elevation_map_interpolated,
-               interpSlope,
+               elevation_map_scaled,
                cv::Size(),
                sample_scale,
                sample_scale,
                cv::INTER_LINEAR);
 
     // Find gradient along x and y directions
-    cv::Mat elevation_map_gradient_x, elevation_map_gradient_y;
-    cv::Sobel(interpSlope, elevation_map_gradient_x, CV_32FC1, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
-    cv::Sobel(interpSlope, elevation_map_gradient_y, CV_32FC1, 0, 1, 3, 1, 0, cv::BORDER_DEFAULT);
+    // Scale factor of 1/8 to normalize 3x3 kernel
+    cv::Sobel(elevation_map_scaled,
+              elevation_map_gradient_x,
+              CV_32FC1,
+              1,
+              0,
+              3,
+              0.125,
+              0,
+              cv::BORDER_DEFAULT);
+    cv::Sobel(elevation_map_scaled,
+              elevation_map_gradient_y,
+              CV_32FC1,
+              0,
+              1,
+              3,
+              0.125,
+              0,
+              cv::BORDER_DEFAULT);
 
-    // Square the x and y gradient matrices, this makes them positive, needed to obtain absolute
-    // slope value
-    cv::pow(elevation_map_gradient_x, 2, elevation_map_gradient_x);
-    cv::pow(elevation_map_gradient_y, 2, elevation_map_gradient_y);
-
-    // Add squared slope of x and y together
-    cv::add(elevation_map_gradient_x, elevation_map_gradient_y, interpSlope);
-
-    // Take the square root to get the real slope
-    cv::sqrt(interpSlope, interpSlope);
+    // Get magnitude map of xy gradient
+    cv::magnitude(elevation_map_gradient_x, elevation_map_gradient_y, interpSlope);
 
     // Apply the mask to extract only the valid data TODO also resize already?
     interpSlope.copyTo(slope_map, elevation_map_mask_scaled);
 }
 
-void Traversability::thresholdSlopeMap(float slope_threshold)
+void Traversability::thresholdSlopeMap()
 {
     // Threshold the slope map to tag slopes that are not traversable
-    // TODO unterstand why it is slope_map_scale^2 (probably because scaled in two directions)
-    float threshold = slope_threshold * slope_map_scale * slope_map_scale
-                      * map_resolution;  // tan(st)=t/(sms*sms*hr)
+    float threshold = std::tan(slope_threshold) * slope_map_scale * map_resolution;
     cv::resize(slope_map,
                slope_map,
                cv::Size(elevation_map.cols, elevation_map.rows),
@@ -257,18 +232,16 @@ void Traversability::thresholdSlopeMap(float slope_threshold)
     cv::threshold(slope_map, slope_map_thresholded, threshold, 1.0f, cv::THRESH_BINARY);
 }
 
-void Traversability::detectObstacles(float elevation_threshold)
+void Traversability::detectObstacles()
 {
-    cv::Mat interpLaplacian;
+    // Find the obstacles with a Laplace filter (gradients) and normalize kernel
+    cv::Laplacian(elevation_map_interpolated,
+                  elevation_map_laplacian,
+                  CV_32FC1,
+                  laplacian_kernel_size,
+                  1.0 / std::pow(2, laplacian_kernel_size * 2 - 6));
 
-    // Find the obstacles with a Laplace filter (gradients)
-    cv::Laplacian(elevation_map_interpolated, interpLaplacian, CV_32FC1, laplacian_kernel_size);
-
-    // Mask the laplacian to remove invalid interpolated data
-    elevation_map_laplacian.setTo(0);
-    interpLaplacian.copyTo(elevation_map_laplacian, elevation_map_mask);
-
-    // The obstacle map is based on the laplacien image and a threshold defines probably obstacles
+    // The obstacle map is based on the laplacien image and a threshold defines probable obstacles
     // TODO sure it is so? -laplacian or abs(laplacian)[
     cv::threshold(-elevation_map_laplacian,
                   elevation_map_laplacian_thresholded,
@@ -285,26 +258,24 @@ void Traversability::detectObstacles(float elevation_threshold)
     elevation_map_laplacian_thresholded.convertTo(contour_mask, CV_8UC1);
     cv::dilate(contour_mask, contour_mask, element, cv::Point(-1, -1), obstacle_iterations);
     std::vector<std::vector<cv::Point>> contours;
-    findContours(contour_mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    findContours(contour_mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
     // prepare variables used to iterate through the single obstacles
     cv::Mat single_contour_mask;
     cv::Mat single_surround_mask;
-    cv::Mat combined_mask;
     cv::Mat obstacle_mask;
     contour_mask.copyTo(single_contour_mask);  // todo unsure if 4 lines useful
     contour_mask.copyTo(single_surround_mask);
-    contour_mask.copyTo(combined_mask);
     contour_mask.copyTo(obstacle_mask);
     obstacle_mask.setTo(cv::Scalar(0));
     obstacle_map.setTo(cv::Scalar(0));
 
     int nContours = contours.size();
-    double maxVal[nContours];
-    double minVal[nContours];  // todo set up so that holes can be found out too
-    double inside_mean[nContours];
-    double outside_mean[nContours];
-    int obstacle_check[nContours];
+    double inside_min;
+    double inside_max;
+    double outside_min;
+    double outside_max;
+
     element = cv::getStructuringElement(
         cv::MORPH_RECT,
         cv::Size(obstacle_vicinity_kernel_size, obstacle_vicinity_kernel_size));  // square kernel
@@ -330,40 +301,30 @@ void Traversability::detectObstacles(float elevation_threshold)
         // keep original mask
         cv::bitwise_xor(single_contour_mask, single_surround_mask, single_surround_mask);
 
-        // remove regions where we do not have elevationmap data
-        cv::bitwise_and(elevation_map_mask, single_contour_mask, single_contour_mask);
-        cv::bitwise_and(elevation_map_mask, single_surround_mask, single_surround_mask);
-        inside_mean[iContour] = cv::mean(elevation_map, single_contour_mask)[0];
-        outside_mean[iContour] = cv::mean(elevation_map, single_surround_mask)[0];
-
         // TODO check again because now peak relies on only one point
         // (should be like top 3 or 5 points)
         cv::minMaxLoc(
-            elevation_map, &minVal[iContour], &maxVal[iContour], NULL, NULL, single_contour_mask);
+            elevation_map, &inside_min, &inside_max, NULL, NULL, single_contour_mask);
+        cv::minMaxLoc(
+            elevation_map, &outside_min, &outside_max, NULL, NULL, single_surround_mask);
 
         // if this is indeed an obstacle
-        if ((maxVal[iContour] - outside_mean[iContour]) > elevation_threshold)
+        if ((inside_max - outside_min) > elevation_threshold
+            || (outside_max - inside_min) > elevation_threshold)
         {
-            obstacle_check[iContour] = 1;
-
             // add obstacle to total obstacle mask
             cv::bitwise_or(single_contour_mask, obstacle_mask, obstacle_mask);
-        }
-        else
-        {
-            obstacle_check[iContour] = 0;
         }
     }
     obstacle_mask.convertTo(obstacle_map, CV_32FC1);
 }
 
-void Traversability::dilateObstacles(float robot_size, int iterations)
+void Traversability::dilateTraversability()
 {
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size / map_resolution) + 1;
-    dilation_kernel = cv::getStructuringElement(
+    cv::Mat dilation_kernel = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(kernel_size, kernel_size));  // round kernel;
-    dilation_iterations = iterations;
 
     // Check here dilation computation
     cv::dilate(traversability_map,
@@ -375,15 +336,46 @@ void Traversability::dilateObstacles(float robot_size, int iterations)
 
 cv::Mat Traversability::computeTraversability()
 {
-    // combine two traversability if feasible
+    elevationMapInterpolate();
+    elevationMap2SlopeMap();
+    thresholdSlopeMap();
+    detectObstacles();
+
+    // combine two traversability
     cv::Mat t1, t2;
-    obstacle_map.convertTo(
-        t1, CV_8UC1);  // TODO decide what to do with map types *masks should be all 8UC1?
+    obstacle_map.convertTo(t1, CV_8UC1);
     slope_map_thresholded.convertTo(t2, CV_8UC1);
-    // multiplication because of previous comment
-    cv::multiply(t2, 255, t2);
     cv::bitwise_or(t1, t2, traversability_map);
-    traversability_map.convertTo(traversability_map, CV_32FC1);
+    cv::multiply(traversability_map, 255, traversability_map);
+
+    dilateTraversability();
+
+    cv::Mat dst;
+    cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map", dst);
+    cv::imshow("Elevation map mask", elevation_map_mask);
+    cv::imshow("Elevation map mask scaled", elevation_map_mask_scaled);
+    cv::normalize(elevation_map_interpolated, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map interpolated", dst);
+    cv::normalize(elevation_map_gradient_x, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient x", dst);
+    cv::normalize(elevation_map_gradient_y, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient y", dst);
+    cv::normalize(slope_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Slope map", dst);
+    cv::imshow("Slope map thresholded", slope_map_thresholded);
+    cv::normalize(elevation_map_laplacian, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map laplacian", dst);
+    cv::imshow("Elevation map laplacian thresholded", elevation_map_laplacian_thresholded);
+    cv::normalize(obstacle_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Obstacle map", dst);
+    cv::imshow("Traversability", traversability_map);
+    cv::waitKey(1);
+
+    // Rotate -90 degress for path planner global map convention
+    cv::transpose(traversability_map, traversability_map);
+    cv::flip(traversability_map, traversability_map, 1); // flip vertically
+
     return traversability_map;
 }
 
@@ -393,10 +385,8 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
 
     // kernel size is dependant on map resolution and robot width
     int kernel_size = (int)(robot_size / map_resolution) + 1;
-    // dilation_iterations = iterations;
 
-    dilation_iterations = 2;
-    dilation_kernel = cv::getStructuringElement(
+    cv::Mat dilation_kernel = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(kernel_size, kernel_size));  // round kernel;
 
     // Check here dilation computation

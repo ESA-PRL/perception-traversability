@@ -8,9 +8,6 @@ rock_library(traversability
     HEADERS traversability.hpp
     DEPS_PKGCONFIG ${OPENCV_PACKAGE})
 
-rock_executable(traversability_bin Main.cpp
-    DEPS traversability)
-
 if(NOT "${PCL_LIBRARIES}" STREQUAL "")
   list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 endif()

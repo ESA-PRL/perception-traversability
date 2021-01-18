@@ -20,21 +20,9 @@
 
 #pragma once
 
-//! ToDo: Remove unncessary includes
-
 // OpenCV
-#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-// PCL  -> Delete all probably
-//#include <pcl/filters/statistical_outlier_removal.h>
-//#include <pcl/filters/voxel_grid.h>
-//#include <pcl/filters/crop_box.h>
-//#include <pcl/features/normal_3d.h>
-//#include <pcl/common/transforms.h>
-
-// Sys -> Delete probably
-#include <sys/time.h>
 
 namespace traversability
 {
@@ -43,47 +31,37 @@ class Traversability
 {
   public:
     Traversability();
-    void welcome();
 
     // parameters setters
-    void configureTraversability(float max_obstacle,
-                                 float max_slope,
+    void configureTraversability(float map_resolution,
+                                 int slope_map_scale,
+                                 float slope_threshold,
+                                 float elevation_threshold,
+                                 int laplacian_kernel_size,
+                                 float laplacian_threshold,
+                                 int obstacle_kernel_size,
+                                 int obstacle_iterations,
+                                 int obstacle_vicinity_kernel_size,
+                                 int obstacle_vicinity_iterations,
                                  float robot_size,
-                                 float map_resolution);
-    void setMapParameters(float size_width,
-                          float size_height,
-                          float resolution,
-                          int scale);                             // Needed??
-    void setObstacleLaplacian(int kernel_size, float threshold);  // Needed??
-    void setObstacleDetection(int kernel_size_o,
-                              int iteration_o,
-                              int kernel_size_s,
-                              int iteration_s);  // Needed??
+                                 int dilation_iterations);
     void setElevationMap(std::vector<float>, int width, int height);
 
     // functionality
     void elevationMapInterpolate();
     void elevationMap2SlopeMap();
-    void detectObstacles(float elevation_threshold);
-    void thresholdSlopeMap(float slope_threshold);
-    void dilateObstacles(float robot_size, int iterations);
+    void detectObstacles();
+    void thresholdSlopeMap();
+    void dilateTraversability();
     cv::Mat computeTraversability();
 
     // local to global rotation
     cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
     void local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
 
-    // images/pcl/data getters
-
   private:
-    bool elevation_map_set;
-
     // map parameters
-    float map_size_width;    // in meters
-    float map_size_height;   // in meters
-    float map_resolution;    // in meters
-    float map_cells_width;   // # of cells in width
-    float map_cells_height;  // # of cells in height
+    float map_resolution;  // in meters per cell
     int slope_map_scale;
 
     // Obstacle laplacian parameters
@@ -96,13 +74,15 @@ class Traversability
     int obstacle_vicinity_kernel_size;
     int obstacle_vicinity_iterations;
 
-    float robot_size;
+    float elevation_threshold;
+    float slope_threshold;
 
-    // Obstacle dilation parameters
-    cv::Mat dilation_kernel;
+    // Traversability dilation parameters
+    float robot_size;  // in meters
     int dilation_iterations;
 
     cv::Mat elevation_map;              // elevationmap as converted from pc
+    cv::Mat elevation_map_scaled;
     cv::Mat elevation_map_mask;         // elevationmap pixels without data mask
     cv::Mat elevation_map_mask_scaled;  // elevationmap pixels without data mask scaled to slope map
     cv::Mat elevation_map_interpolated;
@@ -110,7 +90,6 @@ class Traversability
     cv::Mat elevation_map_gradient_y;
 
     cv::Mat slope_map;              // slopemap built from subsampled gradient
-    cv::Mat slope_map_mask;         // slopemap pixels without data mask
     cv::Mat slope_map_thresholded;  // slopemap thresholded
 
     cv::Mat elevation_map_laplacian;              // laplacian of the elevationmap
