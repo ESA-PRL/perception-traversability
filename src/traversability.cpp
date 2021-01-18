@@ -258,7 +258,7 @@ void Traversability::detectObstacles()
     elevation_map_laplacian_thresholded.convertTo(contour_mask, CV_8UC1);
     cv::dilate(contour_mask, contour_mask, element, cv::Point(-1, -1), obstacle_iterations);
     std::vector<std::vector<cv::Point>> contours;
-    findContours(contour_mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+    findContours(contour_mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
     // prepare variables used to iterate through the single obstacles
     cv::Mat single_contour_mask;
@@ -290,7 +290,7 @@ void Traversability::detectObstacles()
         single_surround_mask.setTo(cv::Scalar(0));
 
         // fill mask with only one contour
-        cv::drawContours(single_contour_mask, contours, iContour, cv::Scalar(1), CV_FILLED);
+        cv::drawContours(single_contour_mask, contours, iContour, cv::Scalar(1), cv::FILLED);
 
         cv::dilate(single_contour_mask,
                    single_surround_mask,
@@ -419,7 +419,7 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
     cv::Mat transform = cv::getRotationMatrix2D(rot_center, (yaw * (180 / M_PI)), 1.0);
 
     // apply yaw rotation
-    cv::warpAffine(rotated_map, rotated_map, transform, rotated_map.size(), CV_INTER_LINEAR);
+    cv::warpAffine(rotated_map, rotated_map, transform, rotated_map.size(), cv::INTER_LINEAR);
 
     return rotated_map;
 }
@@ -458,7 +458,7 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map,
     cv::Mat transform = cv::getRotationMatrix2D(rot_center, (yaw / M_PI * 180.0), 1.0);
 
     // apply yaw rotation
-    cv::warpAffine(rotated_map, rotated_map, transform, rotated_map.size(), CV_INTER_LINEAR);
+    cv::warpAffine(rotated_map, rotated_map, transform, rotated_map.size(), cv::INTER_LINEAR);
     cv::warpAffine(
-        rotated_mask_map, rotated_mask_map, transform, rotated_mask_map.size(), CV_INTER_LINEAR);
+        rotated_mask_map, rotated_mask_map, transform, rotated_mask_map.size(), cv::INTER_LINEAR);
 }
