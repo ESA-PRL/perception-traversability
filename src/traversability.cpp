@@ -1,6 +1,6 @@
 /*
  * This file is part of Traversability.
- * Copyright (C) 2018 Martin Azkarate, reuse of Cartographer software oroginally developed by Marco
+ * Copyright (C) 2018 Martin Azkarate, reuse of Cartographer software originally developed by Marco
  * Pagnamenta
  * Planetary Robotics Lab (PRL), European Space Agency (ESA)
  *
@@ -241,7 +241,7 @@ void Traversability::detectObstacles()
                   laplacian_kernel_size,
                   1.0 / std::pow(2, laplacian_kernel_size * 2 - 6));
 
-    // The obstacle map is based on the laplacien image and a threshold defines probable obstacles
+    // The obstacle map is based on the laplacian image and a threshold defines probable obstacles
     // TODO sure it is so? -laplacian or abs(laplacian)[
     cv::threshold(-elevation_map_laplacian,
                   elevation_map_laplacian_thresholded,
@@ -370,7 +370,7 @@ cv::Mat Traversability::local2globalOrientation(cv::Mat local_map, float yaw)
     // Check here dilation computation
     cv::dilate(local_map, local_map, dilation_kernel, cv::Point(-1, -1), dilation_iterations);
 
-    // After dilation, create enlarged map with the size that fits the rotated map in any posible
+    // After dilation, create enlarged map with the size that fits the rotated map in any possible
     // rotation;
     // Round up to next odd number
     insert_rows = ceil(sqrt(local_map.rows * local_map.rows + local_map.cols * local_map.cols));
@@ -418,7 +418,7 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map,
     // copy relative map in the middle of enlarged map todo create a roi with rect to ease
     // readability
     cv::Mat tmp;
-    relative_map.convertTo(tmp, CV_32FC1);  // force trav maps to be 32F so they can have NaN.
+    relative_map.convertTo(tmp, CV_32FC1);  // force traversability maps to be 32F so they can have NaN.
                                             // TODO Find better way (or kill RAM)
     tmp.copyTo(rotated_map(
         cv::Rect(relative_map.cols / 2, relative_map.rows, relative_map.cols, relative_map.rows)));
@@ -441,7 +441,8 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map,
         rotated_mask_map, rotated_mask_map, transform, rotated_mask_map.size(), cv::INTER_LINEAR);
 }
 
-void Traversability::showTraversability(){
+void Traversability::showTraversability()
+{
     cv::Mat dst;
     cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
     cv::imshow("Elevation map", dst);
