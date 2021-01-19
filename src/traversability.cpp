@@ -350,28 +350,6 @@ cv::Mat Traversability::computeTraversability()
 
     dilateTraversability();
 
-//    cv::Mat dst;
-//    cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Elevation map", dst);
-//    cv::imshow("Elevation map mask", elevation_map_mask);
-//    cv::imshow("Elevation map mask scaled", elevation_map_mask_scaled);
-//    cv::normalize(elevation_map_interpolated, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Elevation map interpolated", dst);
-//    cv::normalize(elevation_map_gradient_x, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Elevation map gradient x", dst);
-//    cv::normalize(elevation_map_gradient_y, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Elevation map gradient y", dst);
-//    cv::normalize(slope_map, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Slope map", dst);
-//    cv::imshow("Slope map thresholded", slope_map_thresholded);
-//    cv::normalize(elevation_map_laplacian, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Elevation map laplacian", dst);
-//    cv::imshow("Elevation map laplacian thresholded", elevation_map_laplacian_thresholded);
-//    cv::normalize(obstacle_map, dst, 0, 1, cv::NORM_MINMAX);
-//    cv::imshow("Obstacle map", dst);
-//    cv::imshow("Traversability", traversability_map);
-//    cv::waitKey(1);
-
     // Rotate -90 degress for path planner global map convention
     cv::transpose(traversability_map, traversability_map);
     cv::flip(traversability_map, traversability_map, 1); // flip vertically
@@ -461,4 +439,28 @@ void Traversability::local2globalOrientation_legacy(cv::Mat relative_map,
     cv::warpAffine(rotated_map, rotated_map, transform, rotated_map.size(), cv::INTER_LINEAR);
     cv::warpAffine(
         rotated_mask_map, rotated_mask_map, transform, rotated_mask_map.size(), cv::INTER_LINEAR);
+}
+
+void Traversability::showTraversability(){
+    cv::Mat dst;
+    cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map", dst);
+    cv::imshow("Elevation map mask", elevation_map_mask);
+    cv::imshow("Elevation map mask scaled", elevation_map_mask_scaled);
+    cv::normalize(elevation_map_interpolated, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map interpolated", dst);
+    cv::normalize(elevation_map_gradient_x, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient x", dst);
+    cv::normalize(elevation_map_gradient_y, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map gradient y", dst);
+    cv::normalize(slope_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Slope map", dst);
+    cv::imshow("Slope map thresholded", slope_map_thresholded);
+    cv::normalize(elevation_map_laplacian, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Elevation map laplacian", dst);
+    cv::imshow("Elevation map laplacian thresholded", elevation_map_laplacian_thresholded);
+    cv::normalize(obstacle_map, dst, 0, 1, cv::NORM_MINMAX);
+    cv::imshow("Obstacle map", dst);
+    cv::imshow("Traversability", traversability_map);
+    cv::waitKey(1);
 }
