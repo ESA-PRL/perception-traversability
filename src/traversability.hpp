@@ -55,6 +55,9 @@ class Traversability
     void dilateTraversability();
     cv::Mat computeTraversability();
 
+    /* bool if we rotate from local to global frame during Traversability::computeTraversability() */
+    bool rotate_local2global;
+
     // local to global rotation
     cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
     void local2globalOrientation_legacy(cv::Mat relative_map, cv::Mat relative_mask_map, float yaw);
