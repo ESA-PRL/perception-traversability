@@ -61,7 +61,12 @@ void Traversability::configureTraversability(float map_resolution,
     this->dilation_iterations = dilation_iterations;
 }
 
-void Traversability::setElevationMap(std::vector<float> data, int width, int height)
+void Traversability::setElevationMap(cv::Mat elevation_map)
+{
+    Traversability::elevation_map = elevation_map;
+}
+
+void Traversability::setElevationMapStdVector(std::vector<float> data, int width, int height)
 {
     // prepare elevation map
     elevation_map.create(width, height, CV_32FC1);

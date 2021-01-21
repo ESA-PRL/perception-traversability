@@ -45,7 +45,10 @@ class Traversability
                                  int obstacle_vicinity_iterations,
                                  float robot_size,
                                  int dilation_iterations);
-    void setElevationMap(std::vector<float>, int width, int height);
+
+    // setters for elevation map
+    void setElevationMap(cv::Mat);
+    void setElevationMapStdVector(std::vector<float>, int width, int height);
 
     void computeTraversability();
 
