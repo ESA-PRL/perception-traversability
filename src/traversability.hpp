@@ -47,12 +47,6 @@ class Traversability
                                  int dilation_iterations);
     void setElevationMap(std::vector<float>, int width, int height);
 
-    // functionality
-    void elevationMapInterpolate();
-    void elevationMap2SlopeMap();
-    void detectObstacles();
-    void thresholdSlopeMap();
-    void dilateTraversability();
     cv::Mat computeTraversability();
 
     /* bool if we rotate from local to global frame during Traversability::computeTraversability() */
@@ -65,7 +59,13 @@ class Traversability
     // imshow
     void showTraversability();
 
-  private:
+  protected:
+    // functionality
+    void elevationMap2SlopeMap();
+    void detectObstacles();
+    void thresholdSlopeMap();
+    void dilateTraversability();
+
     // map parameters
     float map_resolution;  // in meters per cell
     int slope_map_scale;
@@ -89,9 +89,6 @@ class Traversability
 
     cv::Mat elevation_map;              // elevation map as converted from pc
     cv::Mat elevation_map_scaled;
-    cv::Mat elevation_map_mask;         // elevation map pixels without data mask
-    cv::Mat elevation_map_mask_scaled;  // elevation map pixels without data mask scaled to slope map
-    cv::Mat elevation_map_interpolated;
     cv::Mat elevation_map_gradient_x;
     cv::Mat elevation_map_gradient_y;
 

@@ -65,7 +65,6 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
 {
     // prepare elevation map
     elevation_map.create(width, height, CV_32FC1);
-    elevation_map_mask.create(width, height, CV_8UC1);
 
     for (int i = 0; i < width; i++)
     {
@@ -73,103 +72,6 @@ void Traversability::setElevationMap(std::vector<float> data, int width, int hei
         {
             float value = data[i * height + j];
             elevation_map.at<float>(i, j) = value;
-            elevation_map_mask.at<unsigned char>(i, j) = std::isnan(value) ? 0 : 255;
-        }
-    }
-}
-
-void Traversability::elevationMapInterpolate()
-{
-    // Do linear interpolation with the matrix in the y direction
-    // TODO perhaps it is more justified to do it in polar coordinates with the center being at the
-    // stereo camera position
-    // TODO find a way to do dilation using nearest neighbor instead of this approach which presents
-    // boundary issues
-    int16_t column, row, p, start_index, end_index;
-    float value, value_previous, fraction, start_value, end_value;
-
-    // TODO unsure this is good idea..
-    elevation_map.copyTo(elevation_map_interpolated);
-
-    for (column = 0; column < elevation_map.cols; column++)
-    {
-        value_previous = std::nan("");
-        start_index = -1;
-        end_index = -1;
-
-        for (row = 0; row < elevation_map.rows; row++)
-        {
-            // Get the pixel value in the matrix
-            value = elevation_map_interpolated.at<float>(row, column);
-
-            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
-            {
-                // Start of the missing data is the previous cell
-                start_index = row - 1;
-                start_value = value_previous;
-            }
-            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
-            {
-                // End of the missing data
-                end_index = row;
-                end_value = value;
-
-                // Interpolate
-                for (p = start_index; p <= end_index; p++)
-                {
-                    // Evaluate the linear interpolation
-                    fraction = (float)(p - start_index) / (float)(end_index - start_index);
-                    elevation_map_interpolated.at<float>(p, column) =
-                        (start_value * (1.0f - fraction) + end_value * fraction);
-                }
-                start_index = -1;
-                end_index = -1;
-            }
-
-            // Save the values for next iteration
-            value_previous = value;
-        }
-    }
-
-    // same along the other direction to prevent approximation errors when the image is taken with a
-    // ptu
-    for (row = 0; row < elevation_map.rows; row++)
-    {
-        value_previous = std::nan("");
-        start_index = -1;
-        end_index = -1;
-
-        for (column = 0; column < elevation_map.cols; column++)
-        {
-            // Get the pixel value in the matrix
-            value = elevation_map_interpolated.at<float>(row, column);
-
-            if (start_index == -1 && std::isnan(value) && !std::isnan(value_previous))
-            {
-                // Start of the missing data is the previous cell
-                start_index = column - 1;
-                start_value = value_previous;
-            }
-            else if (start_index != -1 && !std::isnan(value) && std::isnan(value_previous))
-            {
-                // End of the missing data
-                end_index = column;
-                end_value = value;
-
-                // Interpolate
-                for (p = start_index; p <= end_index; p++)
-                {
-                    // Evaluate the linear interpolation
-                    fraction = (float)(p - start_index) / (float)(end_index - start_index);
-                    elevation_map_interpolated.at<float>(row, p) =
-                        (start_value * (1.0f - fraction) + end_value * fraction);
-                }
-                start_index = -1;
-                end_index = -1;
-            }
-
-            // Save the values for next iteration
-            value_previous = value;
         }
     }
 }
@@ -179,14 +81,8 @@ void Traversability::elevationMap2SlopeMap()
     float sample_scale = 1.0 / slope_map_scale;
     cv::Mat interpSlope;
 
-    // Scale interpolated elevationMap and mask
-    cv::resize(elevation_map_mask,
-               elevation_map_mask_scaled,
-               cv::Size(),
-               sample_scale,
-               sample_scale,
-               cv::INTER_NEAREST);
-    cv::resize(elevation_map_interpolated,
+    // Scale interpolated elevationMap
+    cv::resize(elevation_map,
                elevation_map_scaled,
                cv::Size(),
                sample_scale,
@@ -218,7 +114,7 @@ void Traversability::elevationMap2SlopeMap()
     cv::magnitude(elevation_map_gradient_x, elevation_map_gradient_y, interpSlope);
 
     // Apply the mask to extract only the valid data TODO also resize already?
-    interpSlope.copyTo(slope_map, elevation_map_mask_scaled);
+    interpSlope.copyTo(slope_map);
 }
 
 void Traversability::thresholdSlopeMap()
@@ -237,7 +133,7 @@ void Traversability::thresholdSlopeMap()
 void Traversability::detectObstacles()
 {
     // Find the obstacles with a Laplace filter (gradients) and normalize kernel
-    cv::Laplacian(elevation_map_interpolated,
+    cv::Laplacian(elevation_map,
                   elevation_map_laplacian,
                   CV_32FC1,
                   laplacian_kernel_size,
@@ -338,7 +234,6 @@ void Traversability::dilateTraversability()
 
 cv::Mat Traversability::computeTraversability()
 {
-    elevationMapInterpolate();
     elevationMap2SlopeMap();
     thresholdSlopeMap();
     detectObstacles();
@@ -450,10 +345,6 @@ void Traversability::showTraversability()
     cv::Mat dst;
     cv::normalize(elevation_map, dst, 0, 1, cv::NORM_MINMAX);
     cv::imshow("Elevation map", dst);
-    cv::imshow("Elevation map mask", elevation_map_mask);
-    cv::imshow("Elevation map mask scaled", elevation_map_mask_scaled);
-    cv::normalize(elevation_map_interpolated, dst, 0, 1, cv::NORM_MINMAX);
-    cv::imshow("Elevation map interpolated", dst);
     cv::normalize(elevation_map_gradient_x, dst, 0, 1, cv::NORM_MINMAX);
     cv::imshow("Elevation map gradient x", dst);
     cv::normalize(elevation_map_gradient_y, dst, 0, 1, cv::NORM_MINMAX);
