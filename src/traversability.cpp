@@ -30,8 +30,9 @@ Traversability::Traversability()
 {
     // initialize
     robot_size = 0.7;
-    /* bool if we rotate from local to global frame during Traversability::computeTraversability() */
-    rotate_local2global = true;
+    /* If set to true, we rotate -90 degrees to path planner global map convention
+       in Traversability::computeTraversability() */
+    use_global_path_planner_convention = true;
 }
 
 void Traversability::configureTraversability(float map_resolution,
@@ -252,8 +253,8 @@ void Traversability::computeTraversability()
 
     dilateTraversability();
 
-    if (rotate_local2global) {
-        // Rotate -90 degress for path planner global map convention
+    if (use_global_path_planner_convention) {
+        // Rotate -90 degrees for path planner global map convention
         cv::transpose(traversability_map, traversability_map);
         cv::flip(traversability_map, traversability_map, 1); // flip vertically
     }

@@ -55,8 +55,9 @@ class Traversability
     // getters to fetch computed traversability
     cv::Mat getTraversabilityMap();
 
-    /* bool if we rotate from local to global frame during Traversability::computeTraversability() */
-    bool rotate_local2global;
+    /* If set to true, we rotate -90 degrees to path planner global map convention
+       in Traversability::computeTraversability() */
+    bool use_global_path_planner_convention;
 
     // local to global rotation
     cv::Mat local2globalOrientation(cv::Mat local_map, float yaw);
