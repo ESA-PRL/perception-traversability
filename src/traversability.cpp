@@ -232,7 +232,7 @@ void Traversability::dilateTraversability()
                dilation_iterations);
 }
 
-cv::Mat Traversability::computeTraversability()
+void Traversability::computeTraversability()
 {
     elevationMap2SlopeMap();
     thresholdSlopeMap();
@@ -252,7 +252,9 @@ cv::Mat Traversability::computeTraversability()
         cv::transpose(traversability_map, traversability_map);
         cv::flip(traversability_map, traversability_map, 1); // flip vertically
     }
+}
 
+cv::Mat Traversability::getTraversabilityMap() {
     return traversability_map;
 }
 

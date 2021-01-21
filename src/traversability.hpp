@@ -47,7 +47,10 @@ class Traversability
                                  int dilation_iterations);
     void setElevationMap(std::vector<float>, int width, int height);
 
-    cv::Mat computeTraversability();
+    void computeTraversability();
+
+    // getters to fetch computed traversability
+    cv::Mat getTraversabilityMap();
 
     /* bool if we rotate from local to global frame during Traversability::computeTraversability() */
     bool rotate_local2global;
